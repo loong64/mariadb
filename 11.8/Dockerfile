@@ -1,4 +1,4 @@
-FROM ghcr.io/loong64/debian:trixie
+FROM ghcr.io/loong64/debian:trixie-slim AS builder
 
 ARG GPG_KEYS=177F4010FE56CA3336300305F1656F24C74CD1D8
 
@@ -44,33 +44,17 @@ RUN set -ex; \
 	\
 	dpkgArch="$(dpkg --print-architecture)"; \
 	aptRepo="[ signed-by=/etc/apt/trusted.gpg.d/mariadb.gpg ] http://archive.mariadb.org/mariadb-11.8.6/repo/debian/ trixie main"; \
-	case "$dpkgArch" in \
-		amd64 | arm64 | ppc64el | s390x) \
-# arches officialy built by upstream
-			echo "deb $aptRepo" > /etc/apt/sources.list.d/pgdg.list; \
-			apt-get update; \
-			;; \
-		*) \
-# we're on an architecture upstream doesn't officially build for
-# let's build binaries from their published source packages
-			echo "deb-src $aptRepo" > /etc/apt/sources.list.d/pgdg.list; \
-			\
-			savedAptMark="$(apt-mark showmanual)"; \
-			\
-			tempDir="$(mktemp -d)"; \
-			cd "$tempDir"; \
-			\
-# create a temporary local APT repo to install from (so that dependency resolution can be handled by APT, as it should be)
-			apt-get update; \
-# build .deb files from upstream's source packages (which are verified by apt-get)
-			nproc="$(nproc)"; \
-			export DEB_BUILD_OPTIONS="nocheck parallel=$nproc"; \
-			apt-get build-dep -y "mariadb-server=$MARIADB_VERSION"; \
-			apt-get source --compile "mariadb-server=$MARIADB_VERSION"; \
-			find . -maxdepth 1 -mindepth 1 -type d -exec rm -rf {} +; \
-			\
-			cd /; \
-			mv "$tempDir" /data; \
-			ls -lAFh; \
-			;; \
-	esac
+	echo "deb-src $aptRepo" > /etc/apt/sources.list.d/pgdg.list; \
+	apt-get update; \
+	tempDir="$(mktemp -d)"; \
+	cd "$tempDir"; \
+	proc="$(nproc)"; \
+	export DEB_BUILD_OPTIONS="nocheck parallel=$nproc"; \
+	apt-get build-dep -y "mariadb-server=$MARIADB_VERSION"; \
+	apt-get source --compile "mariadb-server=$MARIADB_VERSION"; \
+	find . -maxdepth 1 -mindepth 1 -type d -exec rm -rf {} +; \
+	cd /; \
+	mv "$tempDir" /dist
+
+FROM scratch
+COPY --from=builder /dist /dist
