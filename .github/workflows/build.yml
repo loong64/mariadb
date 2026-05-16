@@ -38,16 +38,11 @@ jobs:
 
       - name: Check
         run: |
-          echo "build=true" >> $GITHUB_ENV
-          if [ ! -f "${{ matrix.version }}/${{ matrix.suite }}/Dockerfile" ]; then
-            echo "build=false" >> $GITHUB_ENV
-            exit 0
-          fi
           full_version=$(grep "ARG MARIADB_VERSION=" ${{ matrix.version }}/Dockerfile | sed -n 's/.*=.*:\([0-9.]*\).*/\1/p')
           echo "version=${{ matrix.version }}" >> $GITHUB_ENV
           echo "full_version=${full_version}" >> $GITHUB_ENV
 
-          gh release view ${full_version} -R ${{ github.repository }} | grep mariadb_${full_version}+maria.deb13.tar.xz >/dev/null 2>&1 || echo "build=true" >> $GITHUB_ENV
+          gh release view ${full_version} -R ${{ github.repository }} || echo "build=true" >> $GITHUB_ENV
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
