@@ -66,7 +66,7 @@ jobs:
         if: env.build == 'true'
         uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.version }}/${{ matrix.suite }}/
+          context: ${{ matrix.version }}/
           platforms: linux/loong64
           load: true
           push: false
