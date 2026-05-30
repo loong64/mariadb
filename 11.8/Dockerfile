@@ -6,7 +6,7 @@ RUN set -eux; \
 	apt-get update; \
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
 		ca-certificates \
-        dpkg-dev \
+		dpkg-dev \
 		gpg \
 		gpgv \
 		libjemalloc2 \
@@ -48,8 +48,7 @@ RUN set -ex; \
 	apt-get update; \
 	tempDir="$(mktemp -d)"; \
 	cd "$tempDir"; \
-	proc="$(nproc)"; \
-	export DEB_BUILD_OPTIONS="nocheck parallel=$nproc"; \
+	export DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"; \
 	apt-get build-dep -y "mariadb-server=$MARIADB_VERSION"; \
 	apt-get source --compile "mariadb-server=$MARIADB_VERSION"; \
 	find . -maxdepth 1 -mindepth 1 -type d -exec rm -rf {} +; \
