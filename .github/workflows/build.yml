@@ -29,8 +29,8 @@ jobs:
       matrix:
         name: ['mariadb']
         suite: ['trixie']
-        version: ['11.8', '12.2', '12.3']
-        latest_version: ['12.2']
+        version: ['11.8', '12.3', '13.0']
+        latest_version: ['12.3']
 
     steps:
       - name: Checkout
@@ -70,6 +70,8 @@ jobs:
           platforms: linux/loong64
           load: true
           push: false
+          build-args: |
+            RUNNER_ARCH
           tags: |
             ${{ matrix.name }}:${{ env.full_version }}-${{ matrix.suite }}
           outputs: type=local,dest=./

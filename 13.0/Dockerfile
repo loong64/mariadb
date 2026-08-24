@@ -1,4 +1,5 @@
-FROM ghcr.io/loong64/debian:trixie-slim AS builder
+# vim:set ft=dockerfile:
+FROM ghcr.io/loong64/debian:trixie AS builder
 
 ARG GPG_KEYS=177F4010FE56CA3336300305F1656F24C74CD1D8
 
@@ -6,7 +7,9 @@ RUN set -eux; \
 	apt-get update; \
 	DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
 		ca-certificates \
-        dpkg-dev \
+		curl \
+		dpkg-dev \
+		gcc \
 		gpg \
 		gpgv \
 		libjemalloc2 \
@@ -21,7 +24,7 @@ RUN set -eux; \
 	rm -rf /var/lib/apt/lists/*; \
 	GNUPGHOME="$(mktemp -d)"; \
 	export GNUPGHOME; \
-	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys F806E8C4741675050854E1E33617A873C05597AD; \
+	gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
 	for key in $GPG_KEYS; do \
 		gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key"; \
 	done; \
@@ -30,10 +33,18 @@ RUN set -eux; \
 		gpgconf --kill all; \
 	fi
 
+ARG RUNNER_ARCH
+RUN set -eux; \
+ 	cd /opt; \
+ 	curl -LO https://github.com/loong64/static-clang-build/raw/refs/heads/main/install-static-clang.sh; \
+ 	bash ./install-static-clang.sh; \
+ 	rm -f ./install-static-clang.sh
+
+ENV PATH="/opt/clang/bin:$PATH"
 ENV LANG C.UTF-8
 
 # bashbrew-architectures: amd64 arm64v8 ppc64le s390x
-ARG MARIADB_VERSION=1:12.2.2+maria~deb13
+ARG MARIADB_VERSION=1:13.0.1+maria~deb13
 ENV MARIADB_VERSION $MARIADB_VERSION
 # release-status:Stable
 # release-support-type:Long Term Support
@@ -42,14 +53,12 @@ ENV MARIADB_VERSION $MARIADB_VERSION
 RUN set -ex; \
 	export PYTHONDONTWRITEBYTECODE=1; \
 	\
-	dpkgArch="$(dpkg --print-architecture)"; \
-	aptRepo="[ signed-by=/etc/apt/trusted.gpg.d/mariadb.gpg ] http://archive.mariadb.org/mariadb-12.2.2/repo/debian/ trixie main"; \
-	echo "deb-src $aptRepo" > /etc/apt/sources.list.d/pgdg.list; \
+	aptRepo="[ signed-by=/etc/apt/trusted.gpg.d/mariadb.gpg ] http://archive.mariadb.org/mariadb-13.0.1/repo/debian/ trixie main"; \
+	echo "deb-src $aptRepo" > /etc/apt/sources.list.d/mariadb.list; \
 	apt-get update; \
 	tempDir="$(mktemp -d)"; \
 	cd "$tempDir"; \
-	proc="$(nproc)"; \
-	export DEB_BUILD_OPTIONS="nocheck parallel=$nproc"; \
+	export DEB_BUILD_OPTIONS="nocheck parallel=$(nproc)"; \
 	apt-get build-dep -y "mariadb-server=$MARIADB_VERSION"; \
 	apt-get source --compile "mariadb-server=$MARIADB_VERSION"; \
 	find . -maxdepth 1 -mindepth 1 -type d -exec rm -rf {} +; \

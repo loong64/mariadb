@@ -5,13 +5,18 @@ set -Eeuo pipefail
 #
 
 development_version=main
-development_version_real=12.4
+development_version_real=13.0
 
 defaultSuite='trixie'
+defaultSuiteUBI='ubi10-minimal'
 declare -A suites=(
 	[10.5]='trixie'
 	[10.6]='trixie'
 	[10.11]='trixie'
+	[11.4]='trixie'
+	[11.8]='trixie'
+	[12.2]='trixie'
+	[12.3]='trixie'
 )
 
 declare -A suffix=(
@@ -46,6 +51,15 @@ update_version()
 	else
 		suite="${suites[$dir]:-$defaultSuiteUBI}"
 		fullVersion=$mariaVersion
+		if [[ $version = 10.* ]]; then
+			sed -e '/character-set-collations/d' docker.cnf > "$dir/docker.cnf"
+		else
+			sed -e '/collation-server/d' docker.cnf > "$dir/docker.cnf"
+			if [[ $version != 11.4 ]]; then
+				sed -i -e '/character-set-collations/d' "$dir/docker.cnf"
+				sed -i -e '/character-set/d' "$dir/docker.cnf"
+			fi
+		fi
 		sed -e "s!%%MARIADB_VERSION%%!${version%-*}!" MariaDB-ubi.repo > "$dir"/MariaDB.repo
 	fi
 
@@ -63,8 +77,8 @@ update_version()
 
 	cp "Dockerfile${ubi}.template" "${dir}/Dockerfile"
 
-	# cp docker-entrypoint.sh healthcheck.sh "$dir/"
-	# chmod a+x "$dir"/healthcheck.sh
+	cp docker-entrypoint.sh healthcheck.sh "$dir/"
+	chmod a+x "$dir"/healthcheck.sh
 	sed -i \
 		-e 's!%%MARIADB_VERSION%%!'"$fullVersion"'!g' \
 		-e 's!%%MARIADB_VERSION_BASIC%%!'"$mariaVersion"'!g' \
@@ -76,9 +90,9 @@ update_version()
 		-e 's!%%ARCHES%%! '"$arches"'!g' \
 		"$dir/Dockerfile"
 
-	# sed -i \
-		# -e 's!%%MARIADB_VERSION_BASIC%%!'"$mariaVersion"'!g' \
-		# $dir/docker-entrypoint.sh"
+	sed -i \
+		-e 's!%%MARIADB_VERSION_BASIC%%!'"$mariaVersion"'!g' \
+		"$dir/docker-entrypoint.sh"
 
 	if [ "$suite" = ubi9-minimal ]; then
 		sed -i \
@@ -105,33 +119,37 @@ ENV MARIADB_MAJOR $MARIADB_MAJOR
 				"$dir/Dockerfile"
 			;&
 		10.6-ubi)
-			# sed -i -e '/memory\.pressure/,+7d' \
-				# -e 's/--mariadbd/--mysqld/' \
-				# "$dir/docker-entrypoint.sh"
-			# sed -i -e '/--skip-ssl/d' "$dir/docker-entrypoint.sh" "$dir/healthcheck.sh"
-			# sed -i -e 's/mariadb_upgrade_info/mysql_upgrade_info/' \
-				# "$dir/docker-entrypoint.sh" "$dir/healthcheck.sh"
+			sed -i -e '/memory\.pressure/,+7d' \
+				-e 's/--mariadbd/--mysqld/' \
+				"$dir/docker-entrypoint.sh"
+			sed -i -e '/--skip-ssl/d' "$dir/docker-entrypoint.sh" "$dir/healthcheck.sh"
+			sed -i -e 's/mariadb_upgrade_info/mysql_upgrade_info/' \
+				"$dir/docker-entrypoint.sh" "$dir/healthcheck.sh"
 			sed -i -e 's/ && userdel.*//' \
 				"$dir/Dockerfile"
-			sed -i -e '/microdnf.*openssl/d' \
-				-e '/purge and re-create/{
+			sed -i -e '/purge and re-create/{
 					n
 					s/;/ \/etc\/mysql\/mariadb.conf.d\/50-mysqld_safe.cnf;/}' \
+				-e 's/-galera//' \
 				"$dir/Dockerfile"
 			;;
 		10.11*)
-			# sed -i -e 's/mariadb_upgrade_info/mysql_upgrade_info/' \
-				# -e '/--skip-ssl/d' \
-				# "$dir/docker-entrypoint.sh" "$dir/healthcheck.sh"
+			sed -i -e 's/mariadb_upgrade_info/mysql_upgrade_info/' \
+				-e '/--skip-ssl/d' \
+				"$dir/docker-entrypoint.sh" "$dir/healthcheck.sh"
 			sed -i -e 's/ && userdel.*//' \
-				-e '/microdnf.*openssl/d' \
 				-e '/purge and re-create/{
 					n
 					s/;/ \/etc\/mysql\/mariadb.conf.d\/50-mysqld_safe.cnf;/}' \
+				-e 's/-galera//' \
 				"$dir/Dockerfile"
 			;;
 		11*-ubi|12.2-ubi)
 			sed -i -e '/microdnf.*openssl/d' \
+				"$dir/Dockerfile"
+			;&
+		11.4|11.8|12.2)
+			sed -i -e 's/-galera//' \
 				"$dir/Dockerfile"
 			;;
 		*)

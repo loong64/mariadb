@@ -1,4 +1,18 @@
 {
+  "13.0": {
+    "milestone": "13.0",
+    "version": "13.0.1",
+    "fullVersion": "1:13.0.1+maria~deb13",
+    "releaseStatus": "RC",
+    "supportType": "Rolling",
+    "base": "debian:trixie",
+    "arches": [
+      "amd64",
+      "arm64v8",
+      "ppc64le",
+      "s390x"
+    ]
+  },
   "12.3": {
     "milestone": "12.3",
     "version": "12.3.3",
