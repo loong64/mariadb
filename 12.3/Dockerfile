@@ -33,14 +33,6 @@ RUN set -eux; \
 		gpgconf --kill all; \
 	fi
 
-ARG RUNNER_ARCH
-RUN set -eux; \
- 	cd /opt; \
- 	curl -LO https://github.com/loong64/static-clang-build/raw/refs/heads/main/install-static-clang.sh; \
- 	bash ./install-static-clang.sh; \
- 	rm -f ./install-static-clang.sh
-
-ENV PATH="/opt/clang/bin:$PATH"
 ENV LANG C.UTF-8
 
 # bashbrew-architectures: amd64 arm64v8 ppc64le s390x
