@@ -1,9 +1,9 @@
 {
   "13.0": {
     "milestone": "13.0",
-    "version": "13.0.1",
-    "fullVersion": "1:13.0.1+maria~deb13",
-    "releaseStatus": "RC",
+    "version": "13.0.2",
+    "fullVersion": "1:13.0.2+maria~deb13",
+    "releaseStatus": "Stable",
     "supportType": "Rolling",
     "base": "debian:trixie",
     "arches": [
