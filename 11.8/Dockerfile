@@ -36,7 +36,7 @@ RUN set -eux; \
 ENV LANG C.UTF-8
 
 # bashbrew-architectures: amd64 arm64v8 ppc64le s390x
-ARG MARIADB_VERSION=1:11.8.9+maria~deb13
+ARG MARIADB_VERSION=1:11.8.10+maria~deb13
 ENV MARIADB_VERSION $MARIADB_VERSION
 # release-status:Stable
 # release-support-type:Long Term Support
@@ -45,7 +45,7 @@ ENV MARIADB_VERSION $MARIADB_VERSION
 RUN set -ex; \
 	export PYTHONDONTWRITEBYTECODE=1; \
 	\
-	aptRepo="[ signed-by=/etc/apt/trusted.gpg.d/mariadb.gpg ] http://archive.mariadb.org/mariadb-11.8.9/repo/debian/ trixie main"; \
+	aptRepo="[ signed-by=/etc/apt/trusted.gpg.d/mariadb.gpg ] http://archive.mariadb.org/mariadb-11.8.10/repo/debian/ trixie main"; \
 	echo "deb-src $aptRepo" > /etc/apt/sources.list.d/mariadb.list; \
 	apt-get update; \
 	tempDir="$(mktemp -d)"; \
